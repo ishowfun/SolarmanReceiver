@@ -9,6 +9,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Server.Models;
 
 namespace Server
 {
@@ -25,6 +26,7 @@ namespace Server
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
+            services.AddScoped<DBHelper>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

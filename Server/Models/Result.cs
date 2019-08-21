@@ -7,5 +7,6 @@ namespace Server.Models
 {
     public class Result
     {
+        public string Status { get; set; }
     }
 }

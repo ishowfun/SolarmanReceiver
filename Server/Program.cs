@@ -20,11 +20,17 @@ namespace Server
         public static IWebHostBuilder CreateWebHostBuilder(string[] args)
         {
             var configuration = new ConfigurationBuilder().SetBasePath(Environment.CurrentDirectory)    
-                                          .AddJsonFile("appsettings.json")
+                                          .AddJsonFile("appsettings.json")                                         
                                           .Build();
 
             var url = configuration["host"];
             return WebHost.CreateDefaultBuilder(args)
+                .ConfigureLogging((hc,logging)=>
+                {
+                    logging.AddFilter("System", LogLevel.Warning);
+                    logging.AddFilter("MircroSoft", LogLevel.Warning);
+                    logging.AddLog4Net();
+                })
                 .UseUrls(url)
                 .UseStartup<Startup>();
         }

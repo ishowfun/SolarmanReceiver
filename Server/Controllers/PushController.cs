@@ -10,6 +10,7 @@ using System.Data;
 using Microsoft.AspNetCore.Http.Internal;
 using System.IO;
 using System.Text;
+using Microsoft.Extensions.Logging;
 
 namespace Server.Controllers
 {
@@ -17,10 +18,11 @@ namespace Server.Controllers
     public class PushController : Controller
     {
         private DBHelper _db;
-        public PushController(DBHelper dBHelper)
+        private ILogger _logger;
+        public PushController(DBHelper dBHelper,ILogger<PushController> logger)
         {
             _db = dBHelper;
-            
+            _logger = logger;
         }
         [HttpPost]
         public ActionResult<Result> Post([FromBody]MessageModel messageModel)
@@ -48,6 +50,8 @@ namespace Server.Controllers
             }
             catch(Exception ex)
             {
+                _logger.LogError($"{ex.Message}\n{ex.StackTrace}");
+                _logger.LogDebug(sql);
                 return new StatusCodeResult(503);
             }         
         }

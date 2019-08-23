@@ -25,7 +25,7 @@ namespace Server.Controllers
             _logger = logger;
         }
         [HttpPost]
-        public ActionResult<Result> Post([FromBody]MessageModel messageModel)
+        public ActionResult<Result> Post([FromBody]MessageModel[] messageModel)
         {
             var memery = new MemoryStream();
             Request.EnableRewind();
@@ -33,13 +33,15 @@ namespace Server.Controllers
             Request.Body.CopyTo(memery);
             memery.Position = 0;
             string sql = string.Empty;
-            string recData = new StreamReader(memery, UTF8Encoding.UTF8).ReadToEnd();
+            string recData = string.Empty;
             try
             {
+                recData = new StreamReader(memery, UTF8Encoding.UTF8).ReadToEnd();
+            
                 //MessageModel messageModel = JsonConvert.DeserializeObject<MessageModel>(message);
                 
-                DateTime time = ParseTime(double.Parse(messageModel.zd));
-                sql = $"IF NOT EXISTS (SELECT DeviceId from dbo.GuangFuRec where DeviceId = '{messageModel.g}') INSERT INTO dbo.GuangFuRec (GuangFuRecId,DeviceId,Time,RecData) VALUES({int.Parse(messageModel.za)},'{messageModel.g}','{time.ToString()}','{recData}') else update dbo.GuangFuRec set Time = '{time.ToString()}',RecData='{recData}' where DeviceId = '{messageModel.g}'";
+                DateTime time = ParseTime(double.Parse(messageModel[0].zd));
+                sql = $"IF NOT EXISTS (SELECT DeviceId from dbo.GuangFuRec where DeviceId = '{messageModel[0].g}') INSERT INTO dbo.GuangFuRec (GuangFuRecId,DeviceId,Time,RecData) VALUES({int.Parse(messageModel[0].za)},'{messageModel[0].g}','{time.ToString()}','{recData}') else update dbo.GuangFuRec set Time = '{time.ToString()}',RecData='{recData}' where DeviceId = '{messageModel[0].g}'";
 
                 if (_db.ExecuteNonQuery(CommandType.Text, sql) == 1)
                 {
@@ -53,8 +55,8 @@ namespace Server.Controllers
             catch (Exception ex)
             {
                 _logger.LogError($"{ex.Message}\n{ex.StackTrace}");
-                _logger.LogInformation(recData);
-                _logger.LogInformation(sql);
+                _logger.LogError(recData);
+                _logger.LogError(sql);
                 return new StatusCodeResult(503);
             }
         }
@@ -64,7 +66,7 @@ namespace Server.Controllers
 
             startTime = startTime.AddSeconds(utc);
 
-            startTime = startTime.AddHours(8);//转化为北京时间(北京时间=UTC时间+8小时 )            
+            //startTime = startTime.AddHours(8);//转化为北京时间(北京时间=UTC时间+8小时 )            
 
             return startTime;
         }

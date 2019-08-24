@@ -25,38 +25,36 @@ namespace Server.Controllers
             _logger = logger;
         }
         [HttpPost]
-        public ActionResult<Result> Post([FromBody]MessageModel[] messageModel)
+        public ActionResult<Result> Post([FromBody]dynamic[] messageModels)
         {
-            var memery = new MemoryStream();
-            Request.EnableRewind();
-            Request.Body.Position = 0;
-            Request.Body.CopyTo(memery);
-            memery.Position = 0;
-            string sql = string.Empty;
-            string recData = string.Empty;
             try
             {
-                recData = new StreamReader(memery, UTF8Encoding.UTF8).ReadToEnd();
-            
-                //MessageModel messageModel = JsonConvert.DeserializeObject<MessageModel>(message);
-                
-                DateTime time = ParseTime(double.Parse(messageModel[0].zd));
-                sql = $"IF NOT EXISTS (SELECT DeviceId from dbo.GuangFuRec where DeviceId = '{messageModel[0].g}') INSERT INTO dbo.GuangFuRec (GuangFuRecId,DeviceId,Time,RecData) VALUES({int.Parse(messageModel[0].za)},'{messageModel[0].g}','{time.ToString()}','{recData}') else update dbo.GuangFuRec set Time = '{time.ToString()}',RecData='{recData}' where DeviceId = '{messageModel[0].g}'";
+                foreach (var messageModel in messageModels)
+                {
+                    string ts = messageModel.zd;
+                    DateTime time = ParseTime(double.Parse(ts));
+                    string recData = JsonConvert.SerializeObject(messageModel);
+                    recData = recData.Replace('\'', '_');
+                    recData = recData.Replace("\",\"", "|");
+                    recData = recData.Replace("\"", "").Trim(new char[] { '{','}'});
+                    string idstr = messageModel.za;
+                    int senssorId = int.Parse(idstr);
+                    var sql = $"IF NOT EXISTS (SELECT DeviceId from dbo.GuangFuRec where GuangFuRecId = '{senssorId}') INSERT INTO dbo.GuangFuRec (GuangFuRecId,DeviceId,Time,RecData) VALUES({senssorId},'{messageModel.g}','{time.ToString()}','{recData}') else update dbo.GuangFuRec set Time = '{time.ToString()}',RecData='{recData}' where GuangFuRecId = '{senssorId}'";
 
-                if (_db.ExecuteNonQuery(CommandType.Text, sql) == 1)
-                {
-                    return new ActionResult<Result>(new Result() { Status = "ACCEPTED" });
+                    if (_db.ExecuteNonQuery(CommandType.Text, sql) == 1)
+                    {
+                        
+                    }
+                    else
+                    {
+                        return new ActionResult<Result>(new Result() { Status = "NODATA" });
+                    }
                 }
-                else
-                {
-                    return new ActionResult<Result>(new Result() { Status = "NODATA" });
-                }
+                return new ActionResult<Result>(new Result() { Status = "ACCEPTED" });
             }
             catch (Exception ex)
             {
-                _logger.LogError($"{ex.Message}\n{ex.StackTrace}");
-                _logger.LogError(recData);
-                _logger.LogError(sql);
+                _logger.LogError($"{ex.Message}\n{ex.StackTrace}");                
                 return new StatusCodeResult(503);
             }
         }
